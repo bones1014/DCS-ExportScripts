@@ -207,8 +207,8 @@ ExportScript.ConfigArguments =
     [269] = "%.1f",  -- Reticle_Depress_10s
     [270] = "%.1f",  -- Reticle_Depress_1s
     [271] = "%.3f",  -- HUD_Mode_Select {-0.1666, 0, 0.9996 Select HUD Mode}
-    [272] = "%.1f",  -- Delivery_Mode_Knob {-0.0833, 0, 0.9996 Select Delivery Mode}
-    [273] = "%.1f",  -- Weapon_Select_Knob {-0.142867143, 0, 1, Select Weapon}
+    [272] = "%.2f",  -- Delivery_Mode_Knob {-0.0833, 0, 0.9996 Select Delivery Mode}
+    [273] = "%.2f",  -- Weapon_Select_Knob {-0.142867143, 0, 1, Select Weapon}
     [274] = "%.1f",  -- Heads_Up_Gun_Light
     [275] = "%.1f",  -- Rounds_Remaining_100s
     [276] = "%.1f",  -- Rounds_Remaining_10s
@@ -1199,6 +1199,8 @@ export_ids = {
     PILOT_RWR_SHIP      = 10017,
     PILOT_RWR_ACT_PWR   = 10018,
     PILOT_RWR_POWER     = 10019,
+    PILOT_ALT_IND       = 10020,
+
 }
 
 -----------------------------
@@ -1241,6 +1243,7 @@ function ExportScript.ProcessIkarusDCSConfigLowImportance(mainPanelDevice)
     ExportScript.avtr_time_indicator()
     ExportScript.VOR_ILS_frequency(mainPanelDevice)
     ExportScript.TACAN_channels(mainPanelDevice)
+    ExportScript.Pilot_Alt_Ind(mainPanelDevice)
 
     ---------------
     -- Log Dumps --
@@ -1374,6 +1377,27 @@ function ExportScript.TACAN_channels(mainPanelDevice)
     if tens_decimal > 0.91 then tens_decimal = 0 end
     ExportScript.Tools.SendData(export_ids.WSO_TACAN_FREQUENCY,
         string.format("%.0f%.0f%.0f%s", hundreds * 10, tens_decimal * 10, ones * 10, mode))
+end
+
+function ExportScript.Pilot_Alt_Ind(mainPanelDevice) --Bones
+    local Needle = round(mainPanelDevice:get_argument_value(91) * 100), 2
+    local Hundreds = round(mainPanelDevice:get_argument_value(92) * 10)
+    local Thousands = round(mainPanelDevice:get_argument_value(93) * 10)
+    local TenThousands = round(mainPanelDevice:get_argument_value(94) * 10)
+    local Altimeter = ( (TenThousands ) + (Thousands ) + Hundreds + Needle ) --* 100
+    --[[ExportScript.Tools.SendData(export_ids.PILOT_ALT_NUMERIC, Altimeter)
+    ExportScript.Tools.SendData(export_ids.PILOT_ALT_IND, "ALT\n" .. string.format("%04.0f", Altimeter))
+    ExportScript.Tools.SendData(export_ids.PILOT_ALT_NEEDLE,  Needle)
+    ExportScript.Tools.SendData(export_ids.PILOT_ALT_Hundreds,  Hundreds)
+    ExportScript.Tools.SendData(export_ids.PILOT_ALT_Thousands,  Thousands)
+    ExportScript.Tools.SendData(export_ids.Pilot_ALT_Tenthousands,  TenThousands)]]
+    ExportScript.Tools.SendData(export_ids.PILOT_ALT_IND,   "ALT\n" ..
+                                                            string.format("%1.d", TenThousands) .. 
+                                                            string.format("%1.d", Thousands) .. 
+                                                            string.format("%1.d", Hundreds)  .. 
+                                                            string.format("%1.d", Needle)
+                                )
+
 end
 
 ---------------------------------------------------------------------
