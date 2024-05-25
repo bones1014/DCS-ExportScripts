@@ -1199,6 +1199,7 @@ export_ids = {
     PILOT_RWR_SHIP      = 10017,
     PILOT_RWR_ACT_PWR   = 10018,
     PILOT_RWR_POWER     = 10019,
+    PILOT_ALT_IND = 10020,
 }
 
 -----------------------------
@@ -1241,6 +1242,7 @@ function ExportScript.ProcessIkarusDCSConfigLowImportance(mainPanelDevice)
     ExportScript.avtr_time_indicator()
     ExportScript.VOR_ILS_frequency(mainPanelDevice)
     ExportScript.TACAN_channels(mainPanelDevice)
+    ExportScript.Pilot_Alt_Ind(mainPanelDevice)
 
     ---------------
     -- Log Dumps --
@@ -1374,6 +1376,16 @@ function ExportScript.TACAN_channels(mainPanelDevice)
     if tens_decimal > 0.91 then tens_decimal = 0 end
     ExportScript.Tools.SendData(export_ids.WSO_TACAN_FREQUENCY,
         string.format("%.0f%.0f%.0f%s", hundreds * 10, tens_decimal * 10, ones * 10, mode))
+end
+
+function ExportScript.Pilot_Alt_Ind(mainPanelDevice) --Bones
+    local Needle = round(mainPanelDevice:get_argument_value(91) * 10)
+    local Hundreds = round(mainPanelDevice:get_argument_value(92) * 10)
+    local Thousands = round(mainPanelDevice:get_argument_value(93) * 10)
+    local TenThousands = round(mainPanelDevice:get_argument_value(94) * 10)
+    local Altimeter = ( TenThousands * 100 + Thousands * 10 + Hundreds ) * 100
+    --ExportScript.Tools.SendData(export_ids.PILOT_TAS_NUMERIC, TAS)
+    ExportScript.Tools.SendData(export_ids.PILOT_ALT_IND, string.format("%04.0f", Altimeter))
 end
 
 ---------------------------------------------------------------------
