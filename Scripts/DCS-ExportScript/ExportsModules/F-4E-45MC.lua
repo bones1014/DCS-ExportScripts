@@ -65,10 +65,10 @@ ExportScript.ConfigArguments =
     [87] = "%.1f",   -- Pilot_Canopy
     [88] = "%.1f",   -- Copilot_Canopy
     [90] = "%.1f",   -- Pilot_VSI_Needle
-    [91] = "%.1f",   -- Pilot_Altimeter_Needle
-    [92] = "%.1f",   -- Pilot_Altimeter_Hundreds
-    [93] = "%.1f",   -- Pilot_Altimeter_Thousands
-    [94] = "%.1f",   -- Pilot_Altimeter_Tenthousands
+    [91] = "%.3f",   -- Pilot_Altimeter_Needle
+    [92] = "%.3f",   -- Pilot_Altimeter_Hundreds
+    [93] = "%.3f",   -- Pilot_Altimeter_Thousands
+    [94] = "%.3f",   -- Pilot_Altimeter_Tenthousands
     [95] = "%.2f",   -- Pilot_Altimeter_Set_Knob {0.5, 0, 1, Change Reference Pressure}
     [96] = "%.1f",   -- Pilot_Altimeter_Set_DecHundreds
     [97] = "%.1f",   -- Pilot_Altimeter_Set_DecTens
@@ -1177,6 +1177,14 @@ ExportScript.ConfigArguments =
 
 -- Please fill in this table with IDs that you're using so there are no collisions!
 -- Then just use the table entry, for example: ExportScript.Tools.SendData(export_ids.PILOT_GUN_ROUNDS, ...)
+
+	-- ⚪ white
+	-- ⚫ black
+	-- 🟡 yellow
+	-- 🔴 red
+	-- 🟢 green
+	-- 🔵 blue
+
 export_ids = {
     PILOT_TAS_NUMERIC              = 10001,
     PILOT_TAS_STRING               = 10002,
@@ -1253,6 +1261,9 @@ export_ids = {
     PILOT_IFF_M3                   = 10057,
     WSO_APX80A                     = 10058,
     WSO_APX80A_FULL                = 10059,
+    PILOT_GEAR_IND                 = 10060,
+    PILOT_ALTIMETER                = 10061,
+
 }
 
 -----------------------------
@@ -1304,6 +1315,8 @@ function ExportScript.ProcessIkarusDCSConfigLowImportance(mainPanelDevice)
     ExportScript.Chaff_Flare(mainPanelDevice)
     ExportScript.IFF(mainPanelDevice)
     ExportScript.NAVCOMP(mainPanelDevice) -- WIP
+    ExportScript.Pilot_Gear_Status(mainPanelDevice)
+    ExportScript.Pilot_Altimeter(mainPanelDevice) --WIP
 
     ---------------
     -- Log Dumps --
@@ -1874,6 +1887,91 @@ function ExportScript.TACAN_channels(mainPanelDevice)
     if tens_decimal > 0.91 then tens_decimal = 0 end
     ExportScript.Tools.SendData(export_ids.WSO_TACAN_FREQUENCY,
         string.format("%.0f%.0f%.0f%s", hundreds * 10, tens_decimal * 10, ones * 10, mode))
+end
+
+function ExportScript.Pilot_Gear_Status(mainPanelDevice)
+    local left, nose, right
+    
+    if mainPanelDevice:get_argument_value(52) < 0.5 then 
+            left = "🔴" 
+        elseif mainPanelDevice:get_argument_value(52) > 0.1 and mainPanelDevice:get_argument_value(52) < 0.9 then
+            left = "🟡"
+        else
+            left = "🟢" 
+    end
+    
+    if mainPanelDevice:get_argument_value(51) < 0.5 then 
+            nose = "🔴" 
+        elseif mainPanelDevice:get_argument_value(51) > 0.1 and mainPanelDevice:get_argument_value(51) < 0.9 then
+            nose = "🟡"
+        else
+            nose = "🟢" 
+    end
+    
+    if mainPanelDevice:get_argument_value(50) < 0.5 then 
+            right = "🔴" 
+        elseif mainPanelDevice:get_argument_value(50) > 0.1 and mainPanelDevice:get_argument_value(50) < 0.9 then
+            right = "🟡"
+        else
+            right = "🟢" 
+    end
+    
+    local All_Gear = "LND GEAR\n" .. nose .. "\n" .. left .. " " .. right
+    ExportScript.Tools.SendData(export_ids.PILOT_GEAR_IND, All_Gear)
+end
+
+function ExportScript.Pilot_Altimeter(mainPanelDevice)
+	local altitudeWindowReadout_value1 = string.format("%.f",mainPanelDevice:get_argument_value(92) * 10) --hundreds
+	local altitudeWindowReadout_value2 = string.format("%.f",math.floor(mainPanelDevice:get_argument_value(93) * 10)) --thousands
+	local altitudeWindowReadout_value3 = string.format("%.f",mainPanelDevice:get_argument_value(94) * 10) --tenthousands
+	local altitudeWindowReadout_needle = string.format("%.f",mainPanelDevice:get_argument_value(91) * 1000) --needle
+	
+	--this fixes the extra "10" problem
+	if mainPanelDevice:get_argument_value(92) * 10 < 10 then--altitudeWindowReadout_value1 == "10" then
+		altitudeWindowReadout_value1 = "0"
+	end
+	if altitudeWindowReadout_value2 == "10" then
+		altitudeWindowReadout_value2 = "0"
+	end
+	if altitudeWindowReadout_value3 == "10" then
+		altitudeWindowReadout_value3 = "0"
+	end
+	if altitudeWindowReadout_needle == "10" then
+		altitudeWindowReadout_needle = "0"
+	end
+	--this is for the hash part
+	if altitudeWindowReadout_value1 == "0" then
+		altitudeWindowReadout_value1 = ""
+	end
+	
+	-- this is to fill the blank space when the needle is below 100
+	if #altitudeWindowReadout_needle == 1 then
+		altitudeWindowReadout_needle = string.format("00" .. altitudeWindowReadout_needle)
+	end
+	if #altitudeWindowReadout_needle == 2 then
+		altitudeWindowReadout_needle = string.format("0" .. altitudeWindowReadout_needle)
+	end
+	
+	--[[ExportScript.Tools.SendData(44261, altitudeWindowReadout_value1 .. " ft") --test values
+    ExportScript.Tools.SendData(44262, altitudeWindowReadout_value2 .. " ft") --test values
+	ExportScript.Tools.SendData(44263, altitudeWindowReadout_value3 .. " ft") --test values
+	ExportScript.Tools.SendData(44264, altitudeWindowReadout_needle .. " ft") --test values
+    ExportScript.Tools.SendData(44265, string.format("%.f",mainPanelDevice:get_argument_value(92) * 10) .. " ft") --test values
+    ExportScript.Tools.SendData(44266, string.format("%2.d",mainPanelDevice:get_argument_value(93) * 10) .. " ft") --test values
+	ExportScript.Tools.SendData(44267, string.format("%.f",mainPanelDevice:get_argument_value(94) * 10) .. " ft") --test values
+	ExportScript.Tools.SendData(44268, string.format("%.f",mainPanelDevice:get_argument_value(91) * 1000) .. " ft") --test values]]
+	
+	--value 3 isnt needed bc it is taken over by the needle
+	local altitudeWindowReadout_total = string.format(altitudeWindowReadout_value3 .. altitudeWindowReadout_value2 .. altitudeWindowReadout_value1 .. altitudeWindowReadout_needle)
+	--remove leading zeros
+	altitudeWindowReadout_total = altitudeWindowReadout_total:match("0*(%d+)") --https://stackoverflow.com/questions/34331633/remove-leading-zeroes-in-lua-string
+	local altMsl_f4e_ft  = altitudeWindowReadout_total .. "\nFT" 
+
+    ExportScript.Tools.SendData(export_ids.PILOT_ALTIMETER, altMsl_f4e_ft)
+    --[[ExportScript.Tools.SendData(export_ids.PILOT_needle, altitudeWindowReadout_needle) --test
+    ExportScript.Tools.SendData(export_ids.PILOT_hundreds, altitudeWindowReadout_value1) --test
+    ExportScript.Tools.SendData(export_ids.PILOT_thousands, altitudeWindowReadout_value2) --test
+    ExportScript.Tools.SendData(export_ids.PILOT_tenthousands, altitudeWindowReadout_value3) --test]]
 end
 
 ---------------------------------------------------------------------
