@@ -1177,6 +1177,14 @@ ExportScript.ConfigArguments =
 
 -- Please fill in this table with IDs that you're using so there are no collisions!
 -- Then just use the table entry, for example: ExportScript.Tools.SendData(export_ids.PILOT_GUN_ROUNDS, ...)
+
+	-- ⚪ white
+	-- ⚫ black
+	-- 🟡 yellow
+	-- 🔴 red
+	-- 🟢 green
+	-- 🔵 blue
+
 export_ids = {
     PILOT_TAS_NUMERIC              = 10001,
     PILOT_TAS_STRING               = 10002,
@@ -1253,6 +1261,7 @@ export_ids = {
     PILOT_IFF_M3                   = 10057,
     WSO_APX80A                     = 10058,
     WSO_APX80A_FULL                = 10059,
+    PILOT_GEAR_IND                 = 10060,
 }
 
 -----------------------------
@@ -1304,6 +1313,7 @@ function ExportScript.ProcessIkarusDCSConfigLowImportance(mainPanelDevice)
     ExportScript.Chaff_Flare(mainPanelDevice)
     ExportScript.IFF(mainPanelDevice)
     ExportScript.NAVCOMP(mainPanelDevice) -- WIP
+    ExportScript.Pilot_Gear_Status(mainPanelDevice)
 
     ---------------
     -- Log Dumps --
@@ -1874,6 +1884,37 @@ function ExportScript.TACAN_channels(mainPanelDevice)
     if tens_decimal > 0.91 then tens_decimal = 0 end
     ExportScript.Tools.SendData(export_ids.WSO_TACAN_FREQUENCY,
         string.format("%.0f%.0f%.0f%s", hundreds * 10, tens_decimal * 10, ones * 10, mode))
+end
+
+function ExportScript.Pilot_Gear_Status(mainPanelDevice)
+    local left, nose, right
+    
+    if mainPanelDevice:get_argument_value(52) < 0.5 then 
+            left = "🔴" 
+        elseif mainPanelDevice:get_argument_value(52) > 0.1 and mainPanelDevice:get_argument_value(52) < 0.9 then
+            left = "🟡"
+        else
+            left = "🟢" 
+    end
+    
+    if mainPanelDevice:get_argument_value(51) < 0.5 then 
+            nose = "🔴" 
+        elseif mainPanelDevice:get_argument_value(51) > 0.1 and mainPanelDevice:get_argument_value(51) < 0.9 then
+            nose = "🟡"
+        else
+            nose = "🟢" 
+    end
+    
+    if mainPanelDevice:get_argument_value(50) < 0.5 then 
+            right = "🔴" 
+        elseif mainPanelDevice:get_argument_value(50) > 0.1 and mainPanelDevice:get_argument_value(50) < 0.9 then
+            right = "🟡"
+        else
+            right = "🟢" 
+    end
+    
+    local All_Gear = "LND GEAR\n" .. nose .. "\n" .. left .. " " .. right
+    ExportScript.Tools.SendData(export_ids.PILOT_GEAR_IND, All_Gear)
 end
 
 ---------------------------------------------------------------------
