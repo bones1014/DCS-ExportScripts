@@ -1266,7 +1266,8 @@ export_ids = {
     PILOT_FUEL_READOUT             = 10069,
     PILOT_HDG_CRS                  = 10070,
     PILOT_HSI_COMPASS              = 10071,
-    PILOT_HSI_POINTER              = 10072
+    PILOT_HSI_POINTER              = 10072,
+    PILOT_TACAN_FREQ_CMD_LGHT      = 10073
 }
 
 -- ⚪ white
@@ -2131,6 +2132,13 @@ function ExportScript.TACAN_channels(mainPanelDevice)
 
     local _, tens_decimal = math.modf(tens)
     if tens_decimal > 0.91 then tens_decimal = 0 end
+    -- TACAN Command light
+    local tacan_command 
+    if mainPanelDevice:get_argument_value(170) > 0 then tacan_command = "🟢" 
+        else tacan_command = "⚫" 
+    end
+    ExportScript.Tools.SendData(export_ids.PILOT_TACAN_FREQ_CMD_LGHT, string.format("%.0f%.0f%.0f%s", hundreds * 10, tens_decimal * 10, ones * 10, mode) .. 
+                                "\n" .. tacan_command)
     ExportScript.Tools.SendData(export_ids.PILOT_TACAN_FREQUENCY,
         string.format("%.0f%.0f%.0f%s", hundreds * 10, tens_decimal * 10, ones * 10, mode))
 
@@ -2142,9 +2150,18 @@ function ExportScript.TACAN_channels(mainPanelDevice)
 
     local _, tens_decimal = math.modf(tens)
     if tens_decimal > 0.91 then tens_decimal = 0 end
+
+    
     ExportScript.Tools.SendData(export_ids.WSO_TACAN_FREQUENCY,
         string.format("%.0f%.0f%.0f%s", hundreds * 10, tens_decimal * 10, ones * 10, mode))
 end
+
+-- ⚪ white
+-- ⚫ black
+-- 🟡 yellow
+-- 🔴 red
+-- 🟢 green
+-- 🔵 blue
 
 ---------------------------------------------------------------------
 --                         DEBUG FUNCTIONS                         --
